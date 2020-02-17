@@ -1,7 +1,8 @@
 from course import Student, Course
 from survey import Question, Answer, MultipleChoiceQuestion, NumericQuestion, \
     YesNoQuestion, CheckboxQuestion
-import criterion
+from criterion import HomogeneousCriterion, InvalidAnswerError, \
+    HeterogeneousCriterion
 import grouper
 import pytest
 
@@ -149,6 +150,7 @@ def test_answer_is_valid() -> None:
     a_multiple = Answer("a")
     a_checkbox = Answer(["a", "b"])
     a_yesno = Answer(True)
+    a_yesno_2 = Answer(1)
     a_numeric = Answer(15)
 
     assert a_multiple.is_valid(MultipleChoiceQuestion(1, "choose", ["a", "b"]))\
@@ -158,11 +160,33 @@ def test_answer_is_valid() -> None:
     assert a_checkbox.is_valid(CheckboxQuestion(2, "choose", ["a", "b"])) is \
            True
     assert a_checkbox.is_valid(CheckboxQuestion(2, "choose", ["a", "a"])) is \
-           True
+           False
     assert a_yesno.is_valid(YesNoQuestion(1, "choose")) is True
-    assert a_yesno.is_valid(YesNoQuestion(1, "choose")) is False
+    assert a_yesno_2.is_valid(YesNoQuestion(1, "choose")) is False
     assert a_numeric.is_valid(NumericQuestion(1, "5+10", 1, 20)) is True
-    assert a_numeric.is_valid(NumericQuestion(1, "5+10",18, 20)) is False
+    assert a_numeric.is_valid(NumericQuestion(1, "5+10", 18, 20)) is False
+
+
+def test_homogeneous_criterion() -> None:
+    q = CheckboxQuestion(1, "choose", [1, 2, 3, 4])
+    a1 = Answer([1, 2, 3, 4])
+    a2 = Answer([1, 2])
+    a3 = Answer(["hello"])
+    c = HomogeneousCriterion()
+    assert c.score_answers(q, [a1, a2]) == 0.5
+    assert c.score_answers(q, [a3]) is InvalidAnswerError
+    assert c.score_answers(q, [a1]) == 1.0
+
+
+def test_heterogeneous_criterion() -> None:
+    q = CheckboxQuestion(1, "choose", [1, 2, 3, 4])
+    a1 = Answer([1, 2, 3, 4])
+    a2 = Answer([1])
+    a3 = Answer(["hello"])
+    c = HeterogeneousCriterion()
+    assert c.score_answers(q, [a1, a2]) == 0.75
+    assert c.score_answers(q, [a3]) is InvalidAnswerError
+    assert c.score_answers(q, [a1]) == 0.0
 
 
 if __name__ == '__main__':
