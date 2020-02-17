@@ -24,6 +24,7 @@ evaluate a group of answers to a survey question.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, List
+
 if TYPE_CHECKING:
     from survey import Question, Answer
 
@@ -51,10 +52,13 @@ class Criterion:
         Each implementation of this abstract class will measure quality
         differently.
         """
-        raise NotImplementedError
+        # if any answers are invalid
+        for answer in answers:
+            if not answer.is_valid(question):
+                return 1.0
 
 
-class HomogeneousCriterion:
+class HomogeneousCriterion(Criterion):
     """
     A criterion used to evaluate the quality of a group based on the group
     members' answers for a given question.
@@ -80,11 +84,24 @@ class HomogeneousCriterion:
         === Precondition ===
         len(answers) > 0
         """
-        question.get_similarity()
+        # check if answers are valid answers
+        if super().score_answers(question, answers):
+            return InvalidAnswerError
+
+        score = 0
+        cases = 0
+        # if answers only have 1 item
+        if len(answers) == 1:
+            return 1.0
+        for i in range(0, len(answers)):
+            for j in range(i + 1, len(answers)):
+                score += question.get_similarity(answers[i], answers[j])
+                cases += 1
+
+        return score / cases
 
 
-class HeterogeneousCriterion:
-    # TODO: make this a child class of another class defined in this file
+class HeterogeneousCriterion(HomogeneousCriterion):
     """ A criterion used to evaluate the quality of a group based on the group
     members' answers for a given question.
 
@@ -109,11 +126,13 @@ class HeterogeneousCriterion:
         === Precondition ===
         len(answers) > 0
         """
-        # TODO: complete the body of this method
+        homo = super().score_answers(question, answers)
+        if homo is InvalidAnswerError:
+            return homo
+        return 1.0 - homo
 
 
-class LonelyMemberCriterion:
-    # TODO: make this a child class of another class defined in this file
+class LonelyMemberCriterion(Criterion):
     """ A criterion used to measure the quality of a group of students
     according to the group members' answers to a question. This criterion
     assumes that a group is of high quality if no member of the group gives
@@ -137,10 +156,31 @@ class LonelyMemberCriterion:
         === Precondition ===
         len(answers) > 0
         """
-        # TODO: complete the body of this method
+        # check if answer in answers are valid
+        if super().score_answers(question, answers):
+            return InvalidAnswerError
+
+        score = 0.0
+
+        # if answers only have 1 item
+        if len(answers) == 1:
+            return 0.0
+
+        # now check if answer is unique
+        for i in range(0, len(answers)):
+            score = 0.0  # reset the score
+            for j in range(0, len(answers)):
+                # if you find any other answer that's same to answer[i]
+                if i != j and answers[i] == answers[j]:
+                    score = 1.0
+            if not score:
+                return 0.0
+
+        return 1.0
 
 
 if __name__ == '__main__':
     import python_ta
+
     python_ta.check_all(config={'extra-imports': ['typing',
                                                   'survey']})
