@@ -550,17 +550,25 @@ class Survey:
         All students in <students> have an answer to all questions in this
             survey
         """
+        # list of answers of all the students
+        ans_list = []
+        # total score
+        score = 0
+
+        # check if _questions is empty
         if len(self._questions) == 0:
             return 0
 
         try:
             for qid, q in self._questions.items():
+                # reset answer list for new question
+                ans_list = []
                 for student in students:
                     ans_list.append(student.get_answer(q))
-                score += self._criteria[qid].score_answers(self, q, ans_list) *\
-                         self._weights[qid]
-
+                score += self._criteria[qid].score_answers(q, ans_list) \
+                         * self._weights[qid]
             return score / len(self._questions)
+
         except InvalidAnswerError:
             return 0
 
