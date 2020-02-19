@@ -580,7 +580,35 @@ class Survey:
         All students in the groups in <grouping> have an answer to all questions
             in this survey
         """
-        # TODO: complete the body of this method
+        # list of answers of all the students
+        ans_list = []
+        student_list = []
+        student_num = 0
+        # total score
+        score = 0
+
+        # check if grouping is empty
+        if len(grouping.get_groups()) == 0:
+            return 0
+
+        try:
+            # make a list of students
+            for group in grouping.get_groups():
+                for student in group.get_members():
+                    student_list.append(student)
+                    student_num += 1
+            for qid, q in self._questions.items():
+                # make a list of answers for all the students
+                for student in student_list:
+                    ans_list.append(student.get_answer(q))
+                # for each question, add the scores for the list of answers
+                score += self._criteria[qid].score_answers(self, q, ans_list) * \
+                         self._weights[qid]
+
+            return score / student_num
+
+        except InvalidAnswerError:
+            return 0
 
 
 if __name__ == '__main__':
