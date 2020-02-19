@@ -588,22 +588,20 @@ class Survey:
         All students in the groups in <grouping> have an answer to all questions
             in this survey
         """
-        # total score
-        score = 0
-
-        # check if _questions is empty
-        if len(self._questions) == 0:
+        # check if grouping is empty
+        if len(grouping.get_groups()) == 0:
             return 0
 
+        # get average of all questions for each group
         try:
-            for qid, q in self._questions.items():
-                # list of answers of all the students
-                ans_list = []
-                for student in students:
-                    ans_list.append(student.get_answer(q))
-                score += self._criteria[qid].score_answers(q, ans_list) \
-                         * self._weights[qid]
-            return score / len(self._questions)
+            for group in grouping.get_groups():
+                # make a list of students in each group
+                student_list = []
+                for student in group.get_members():
+                    student_list.append(student)
+                group_score += self.score_students(student_list)
+
+            return group_score / len(grouping.get_groups())
 
         except InvalidAnswerError:
             return 0
