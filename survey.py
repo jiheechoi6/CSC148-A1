@@ -24,7 +24,7 @@ described different types of questions that can be asked in a given survey.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Union, Dict, List
-from criterion import HomogeneousCriterion, InvalidAnswerError
+from criterion import HomogeneousCriterion
 if TYPE_CHECKING:
     from criterion import Criterion
     from grouper import Grouping
@@ -101,7 +101,7 @@ class MultipleChoiceQuestion(Question):
         <options> contains at least two elements
         """
         Question.__init__(self, id_, text)
-        self.options = options
+        self._options = options
 
     def __str__(self) -> str:
         """
@@ -111,8 +111,8 @@ class MultipleChoiceQuestion(Question):
         You can choose the precise format of this string.
         """
         s = Question.__str__(self)
-        for option in self.options:
-            s = s + '\n' + option  # add line for each options
+        for option in self._options:
+            s = s + '\n' + str(option)  # add line for each options
 
         return s
 
@@ -123,7 +123,7 @@ class MultipleChoiceQuestion(Question):
         An answer is valid if its content is one of the possible answers to this
         question.
         """
-        for option in self.options:
+        for option in self._options:
             if answer.content == option:
                 return True
 
@@ -166,8 +166,8 @@ class NumericQuestion(Question):
         min_ < max_
         """
         Question.__init__(self, id_, text)  # use the parent class initializer
-        self.min = min_
-        self.max = max_
+        self._min = min_
+        self._max = max_
 
     def __str__(self) -> str:
         """
@@ -176,7 +176,8 @@ class NumericQuestion(Question):
 
         You can choose the precise format of this string.
         """
-        s = Question.__str__(self) + ' (' + str(self.min) + ', ' + str(self.max) + ')'
+        s = Question.__str__(self) + ' (' + str(self._min) + ', ' + \
+            str(self._max) + ')'
 
         return s
 
@@ -190,7 +191,7 @@ class NumericQuestion(Question):
         if isinstance(answer.content, bool):
             return False
 
-        return answer.content in range(self.min, self.max+1)
+        return answer.content in range(self._min, self._max+1)
 
     def get_similarity(self, answer1: Answer, answer2: Answer) -> float:
         """
@@ -218,7 +219,7 @@ class NumericQuestion(Question):
         """
         # precondition says min < max
         return 1 - abs(answer1.content - answer2.content) / \
-                                                (self.max - self.min)
+                                                (self._max - self._min)
 
 
 class YesNoQuestion(Question):
@@ -310,8 +311,10 @@ class CheckboxQuestion(MultipleChoiceQuestion):
         An answer is valid iff its content is a non-empty list containing
         unique possible answers to this question.
         """
-        # check if the list is empty
-        if len(answer.content) == 0:
+        # check if the list is empty or not type list
+        if not isinstance(answer.content, list):
+            return False
+        elif len(answer.content) == 0:
             return False
 
         # check if the list is unique
@@ -319,7 +322,7 @@ class CheckboxQuestion(MultipleChoiceQuestion):
             return False
 
         for ans in answer.content:  # check if answers are in options
-            if ans not in self.options:
+            if ans not in self._options:
                 return False
 
         return True
@@ -408,18 +411,43 @@ class Survey:
         This new survey should use a HomogeneousCriterion as a default criterion
         and should use 1 as a default weight.
         """
-        # TODO: complete the body of this method
+        # create empty dictionary
+        self._questions = {}
+        self._criteria = {}
+        self._weights = {}
+        default_c = HomogeneousCriterion()
+
+        for question in questions:
+            self._questions[question.id] = question
+            self._criteria[question.id] = default_c
+            self._weights[question.id] = 1
+
+        self._default_criterion = default_c
+        self._default_weight = 1
 
     def __len__(self) -> int:
         """ Return the number of questions in this survey """
-        # TODO: complete the body of this method
+        length = 0
+        for q in self._questions:
+            # add 1 only if questions are valid question class
+            if isinstance(self._questions[q], Question):
+                length += 1
+
+        return length
 
     def __contains__(self, question: Question) -> bool:
         """
         Return True iff there is a question in this survey with the same
         id as <question>.
         """
-        # TODO: complete the body of this method
+        # check if input is valid
+        if not isinstance(question, Question):
+            return False
+        for q in self._questions:
+            if q == question.id:
+                return True
+
+        return False
 
     def __str__(self) -> str:
         """
@@ -428,11 +456,20 @@ class Survey:
 
         You can choose the precise format of this string.
         """
-        # TODO: complete the body of this method
+        rep = ""
+        for ids, q in self._questions.items():
+            rep = rep + "question id: " + str(ids) + "\ntext:\n" + str(q) + "\n"
+
+        return rep
 
     def get_questions(self) -> List[Question]:
         """ Return a list of all questions in this survey """
-        # TODO: complete the body of this method
+        q = []
+        # convert dictionary to list
+        for ids in self._questions:
+            q.append(self._questions[ids])
+
+        return q
 
     def _get_criterion(self, question: Question) -> Criterion:
         """
@@ -444,7 +481,11 @@ class Survey:
         === Precondition ===
         <question>.id occurs in this survey
         """
-        # TODO: complete the body of this method
+        # check if question id is in the criteria list
+        if question.id not in self._criteria:
+            return self._default_criterion
+        else:
+            return self._criteria[question.id]
 
     def _get_weight(self, question: Question) -> int:
         """
@@ -456,7 +497,10 @@ class Survey:
         === Precondition ===
         <question>.id occurs in this survey
         """
-        # TODO: complete the body of this method
+        if question.id not in self._weights:
+            return self._default_weight
+        else:
+            return self._weights[question.id]
 
     def set_weight(self, weight: int, question: Question) -> bool:
         """
@@ -465,7 +509,11 @@ class Survey:
         If <question>.id does not occur in this survey, do not set the <weight>
         and return False instead.
         """
-        # TODO: complete the body of this method
+        if question.id not in self._questions:
+            return False
+        else:
+            self._weights[question.id] = weight
+            return True
 
     def set_criterion(self, criterion: Criterion, question: Question) -> bool:
         """
@@ -475,7 +523,11 @@ class Survey:
         If <question>.id does not occur in this survey, do not set the <weight>
         and return False instead.
         """
-        # TODO: complete the body of this method
+        if question.id not in self._questions:
+            return False
+        else:
+            self._criteria[question.id] = criterion
+            return True
 
     def score_students(self, students: List[Student]) -> float:
         """
