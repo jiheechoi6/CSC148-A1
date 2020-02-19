@@ -52,7 +52,7 @@ def slice_list(lst: List[Any], n: int) -> List[List[Any]]:
     count = 0
     re = []
     if len(lst) > 0 and n > 0:
-        for i in range(0, len(lst), n):
+        for _ in range(0, len(lst), n):
             if count + n > len(lst):
                 re.append(lst[count:])
             else:
@@ -78,8 +78,8 @@ def windows(lst: List[Any], n: int) -> List[List[Any]]:
     count = 0
     re = []
     if len(lst) > 0 and n > 0:
-        for i in range(0, len(lst)+n, n):
-            if len(lst[count:count+n])==n:
+        for _ in range(0, len(lst)+n, n):
+            if len(lst[count:count+n]) == n:
                 re.append(lst[count:count + n])
                 count += 1
     return re
@@ -189,14 +189,18 @@ class RandomGrouper(Grouper):
         return g
 
 
-def bigval(dic: dict) -> Any:
-    bigval = 0
-    for i in dic:
-        val = dic[i]
-        if val > bigval:
+def bigval(s: List[Student], lst: List[Student], survey: Survey) -> Any:
+    """
+    returns the student that gives the largest score
+
+    """
+    bigval1 = -99999
+    big = None
+    for i in lst:
+        if survey.score_students(s + [i]) > bigval1:
             big = i
-            bigval = val
-    return bigval
+            bigval1 = survey.score_students(s + [i])
+    return big
 
 
 class GreedyGrouper(Grouper):
@@ -239,20 +243,22 @@ class GreedyGrouper(Grouper):
         required to make sure all students in <course> are members of a group.
         """
         tup = course.get_students()
-        dic = {}
         g = Grouping()
-        for i in tup:
-            lst = [i]
-            dic[i] = survey.score_students(lst)
-        for i in range(0, len(tup), self.group_size):
-            stu = [tup[i]]
-            del dic[tup[i]]
-            for k in range(0, self.group_size):
-                stu.append(dic[bigval(dic)])
-                del dic[bigval(dic)]
-            group = Group(stu)
+        lst = list(tup)
+        lst = sort_students(lst, 'id')
+        while True:
+            grouplst = []
+            if len(lst) <= self.group_size:
+                group = Group(lst)
+                g.add_group(group)
+                return g
+            grouplst.append(lst[0])
+            lst.pop(0)
+            for _ in range(1, self.group_size):
+                grouplst.append(bigval(grouplst, lst, survey))
+                lst.remove(bigval(grouplst, lst, survey))
+            group = Group(grouplst)
             g.add_group(group)
-        return g
 
 
 class WindowGrouper(Grouper):
@@ -308,7 +314,8 @@ class WindowGrouper(Grouper):
         while True:
             for i in range(0, len(win)):
                 if i + 1 < len(win):
-                    if survey.score_students(i) >= survey.score_students(i + 1):
+                    if survey.score_students(win[i]) \
+                            >= survey.score_students(win[i+1]):
                         group = Group(win[i])
                         g.add_group(group)
                         for p in win[i]:
@@ -425,8 +432,8 @@ class Grouping:
         invariant don't add it and return False instead.
         """
         ids = []
-        for i in group.get_members():
-            ids.append(i.id)
+        for peacock in group.get_members():
+            ids.append(peacock.id)
         if len(group) == 0:
             return False
         for i in self._groups:
