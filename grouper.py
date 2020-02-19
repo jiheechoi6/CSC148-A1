@@ -49,7 +49,16 @@ def slice_list(lst: List[Any], n: int) -> List[List[Any]]:
     >>> slice_list(['a', 1, 6.0, False], 3) == [['a', 1, 6.0], [False]]
     True
     """
-    # TODO: complete the body of this function
+    count = 0
+    re = []
+    if len(lst) > 0 and n > 0:
+        for i in range(0, len(lst), n):
+            if count + n > len(lst):
+                re.append(lst[count:])
+            else:
+                re.append(lst[count:count+n])
+            count += n
+    return re
 
 
 def windows(lst: List[Any], n: int) -> List[List[Any]]:
@@ -66,7 +75,14 @@ def windows(lst: List[Any], n: int) -> List[List[Any]]:
     >>> windows(['a', 1, 6.0, False], 3) == [['a', 1, 6.0], [1, 6.0, False]]
     True
     """
-    # TODO: complete the body of this function
+    count = 0
+    re = []
+    if len(lst) > 0 and n > 0:
+        for i in range(0, len(lst)+n, n):
+            if len(lst[count:count+n])==n:
+                re.append(lst[count:count + n])
+                count += 1
+    return re
 
 
 class Grouper:
@@ -90,7 +106,7 @@ class Grouper:
         === Precondition ===
         group_size > 1
         """
-        # TODO: complete the body of this method
+        self.group_size = group_size
 
     def make_grouping(self, course: Course, survey: Survey) -> Grouping:
         """ Return a grouping for all students in <course> using the questions
@@ -128,7 +144,13 @@ class AlphaGrouper(Grouper):
 
         Hint: the sort_students function might be useful
         """
-        # TODO: complete the body of this method
+        lst = sort_students(course.students.copy(), 'name')
+        g = Grouping()
+        lst = slice_list(lst, self.group_size)
+        for i in lst:
+            group = Group(i)
+            g.add_group(group)
+        return g
 
 
 class RandomGrouper(Grouper):
@@ -156,7 +178,25 @@ class RandomGrouper(Grouper):
         members if that is required to make sure all students in <course> are
         members of a group.
         """
-        # TODO: complete the body of this method
+        lst = course.students.copy()
+        lst1 = lst.copy()
+        random.shuffle(lst1)
+        g = Grouping()
+        lst = slice_list(lst, self.group_size)
+        for i in lst:
+            group = Group(i)
+            g.add_group(group)
+        return g
+
+
+def bigval(dic: dict) -> Any:
+    bigval = 0
+    for i in dic:
+        val = dic[i]
+        if val > bigval:
+            big = i
+            bigval = val
+    return bigval
 
 
 class GreedyGrouper(Grouper):
@@ -198,7 +238,21 @@ class GreedyGrouper(Grouper):
         The final group created may have fewer than N members if that is
         required to make sure all students in <course> are members of a group.
         """
-        # TODO: complete the body of this method
+        tup = course.get_students()
+        dic = {}
+        g = Grouping()
+        for i in tup:
+            lst = [i]
+            dic[i] = survey.score_students(lst)
+        for i in range(0, len(tup), self.group_size):
+            stu = [tup[i]]
+            del dic[tup[i]]
+            for k in range(0, self.group_size):
+                stu.append(dic[bigval(dic)])
+                del dic[bigval(dic)]
+            group = Group(stu)
+            g.add_group(group)
+        return g
 
 
 class WindowGrouper(Grouper):
@@ -243,7 +297,34 @@ class WindowGrouper(Grouper):
         after repeating steps 1 and 2 above, put the remaining students into a
         new group.
         """
-        # TODO: complete the body of this method
+        if len(course.students) <= self.group_size:
+            g = Grouping()
+            group = Group(course.students.copy())
+            g.add_group(group)
+            return g
+        lst = course.students.copy()
+        win = windows(lst, self.group_size)
+        g = Grouping()
+        while True:
+            for i in range(0, len(win)):
+                if i + 1 < len(win):
+                    if survey.score_students(i) >= survey.score_students(i + 1):
+                        group = Group(win[i])
+                        g.add_group(group)
+                        for p in win[i]:
+                            lst.remove(p)
+                        break
+                else:
+                    group = Group(win[i])
+                    g.add_group(group)
+                    for p in win[i]:
+                        lst.remove(p)
+                    break
+            if len(lst) <= self.group_size:
+                group = Group(lst)
+                g.add_group(group)
+                return g
+            win = windows(lst, self.group_size)
 
 
 class Group:
@@ -261,18 +342,21 @@ class Group:
 
     def __init__(self, members: List[Student]) -> None:
         """ Initialize a group with members <members> """
-        # TODO: complete the body of this method
+        self._members = members
 
     def __len__(self) -> int:
         """ Return the number of members in this group """
-        # TODO: complete the body of this method
+        return len(self._members)
 
     def __contains__(self, member: Student) -> bool:
         """
         Return True iff this group contains a member with the same id
         as <member>.
         """
-        # TODO: complete the body of this method
+        for i in self._members:
+            if member.id == i.id:
+                return True
+        return False
 
     def __str__(self) -> str:
         """
@@ -281,13 +365,19 @@ class Group:
 
         You can choose the precise format of this string.
         """
-        # TODO: complete the body of this method
+        s = ""
+        for i in self._members:
+            s = s + i.name + ", "
+        return s
 
     def get_members(self) -> List[Student]:
         """ Return a list of members in this group. This list should be a
         shallow copy of the self._members attribute.
         """
-        # TODO: complete the body of this method
+        lst = []
+        for i in self._members:
+            lst.append(i)
+        return lst
 
 
 class Grouping:
@@ -306,11 +396,11 @@ class Grouping:
 
     def __init__(self) -> None:
         """ Initialize a Grouping that contains zero groups """
-        # TODO: complete the body of this method
+        self._groups = []
 
     def __len__(self) -> int:
         """ Return the number of groups in this grouping """
-        # TODO: complete the body of this method
+        return len(self._groups)
 
     def __str__(self) -> str:
         """
@@ -320,7 +410,12 @@ class Grouping:
 
         You can choose the precise format of this string.
         """
-        # TODO: complete the body of this method
+        s = ""
+        for i in self._groups:
+            for k in i.get_members():
+                s = s + k.name + ", "
+            s = s + '\n'
+        return s
 
     def add_group(self, group: Group) -> bool:
         """
@@ -329,14 +424,27 @@ class Grouping:
         Iff adding <group> to this grouping would violate a representation
         invariant don't add it and return False instead.
         """
-        # TODO: complete the body of this method
+        ids = []
+        for i in group.get_members():
+            ids.append(i.id)
+        if len(group) == 0:
+            return False
+        for i in self._groups:
+            for k in i.get_members():
+                if k.id in ids:
+                    return False
+        self._groups.append(group)
+        return True
 
     def get_groups(self) -> List[Group]:
         """ Return a list of all groups in this grouping. 
         This list should be a shallow copy of the self._groups 
         attribute.
         """
-        # TODO: complete the body of this method
+        lst = []
+        for i in self._groups:
+            lst.append(i)
+        return lst
 
 
 if __name__ == '__main__':
