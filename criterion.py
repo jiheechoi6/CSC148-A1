@@ -86,7 +86,7 @@ class HomogeneousCriterion(Criterion):
         """
         # check if answers are valid answers
         if super().score_answers(question, answers):
-            return InvalidAnswerError
+            raise InvalidAnswerError
 
         score = 0
         cases = 0
@@ -158,9 +158,7 @@ class LonelyMemberCriterion(Criterion):
         """
         # check if answer in answers are valid
         if super().score_answers(question, answers):
-            return InvalidAnswerError
-
-        score = 0.0
+            raise InvalidAnswerError
 
         # if answers only have 1 item
         if len(answers) == 1:
@@ -168,11 +166,12 @@ class LonelyMemberCriterion(Criterion):
 
         # now check if answer is unique
         for i in range(0, len(answers)):
-            score = 0.0  # reset the score
             for j in range(0, len(answers)):
+                score = 0.0  # reset the score
                 # if you find any other answer that's same to answer[i]
-                if i != j and answers[i] == answers[j]:
+                if (i != j) and (answers[i].content == answers[j].content):
                     score = 1.0
+                    break
             if not score:
                 return 0.0
 
