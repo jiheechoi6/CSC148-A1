@@ -550,7 +550,19 @@ class Survey:
         All students in <students> have an answer to all questions in this
             survey
         """
-        # TODO: complete the body of this method
+        if len(self._questions) == 0:
+            return 0
+
+        try:
+            for qid, q in self._questions.items():
+                for student in students:
+                    ans_list.append(student.get_answer(q))
+                score += self._criteria[qid].score_answers(self, q, ans_list) *\
+                         self._weights[qid]
+
+            return score / len(self._questions)
+        except InvalidAnswerError:
+            return 0
 
     def score_grouping(self, grouping: Grouping) -> float:
         """ Return a score for <grouping> calculated based on the answers of
