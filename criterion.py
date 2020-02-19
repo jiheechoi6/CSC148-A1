@@ -35,7 +35,7 @@ class InvalidAnswerError(Exception):
     """
 
 
-class Criterion(object):
+class Criterion:
     """
     An abstract class representing a criterion used to evaluate the quality of
     a group based on the group members' answers for a given question.
@@ -52,7 +52,7 @@ class Criterion(object):
         Each implementation of this abstract class will measure quality
         differently.
         """
-        NotImplementedError
+        raise NotImplementedError
 
 
 class HomogeneousCriterion(Criterion):
@@ -81,10 +81,6 @@ class HomogeneousCriterion(Criterion):
         === Precondition ===
         len(answers) > 0
         """
-        # check if answers are valid answers
-        # if super().score_answers(question, answers):
-        #     raise InvalidAnswerError
-
         for answer in answers:
             if not answer.is_valid(question):
                 raise InvalidAnswerError
