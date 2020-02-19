@@ -52,7 +52,7 @@ def slice_list(lst: List[Any], n: int) -> List[List[Any]]:
     count = 0
     re = []
     if len(lst) > 0 and n > 0:
-        for _ in range(0, len(lst), n):
+        for i in range(0, len(lst), n):
             if count + n > len(lst):
                 re.append(lst[count:])
             else:
@@ -78,10 +78,9 @@ def windows(lst: List[Any], n: int) -> List[List[Any]]:
     count = 0
     re = []
     if len(lst) > 0 and n > 0:
-        for _ in range(0, len(lst)+n, n):
-            if len(lst[count:count+n]) == n:
-                re.append(lst[count:count + n])
-                count += 1
+        while len(lst[count:]) >= n:
+            re.append(lst[count:count + n])
+            count += 1
     return re
 
 
@@ -190,16 +189,12 @@ class RandomGrouper(Grouper):
 
 
 def bigval(s: List[Student], lst: List[Student], survey: Survey) -> Any:
-    """
-    returns the student that gives the largest score
-
-    """
-    bigval1 = -99999
+    bigval = -99999
     big = None
     for i in lst:
-        if survey.score_students(s + [i]) > bigval1:
+        if survey.score_students(s + [i]) > bigval:
             big = i
-            bigval1 = survey.score_students(s + [i])
+            bigval = survey.score_students(s + [i])
     return big
 
 
@@ -254,7 +249,7 @@ class GreedyGrouper(Grouper):
                 return g
             grouplst.append(lst[0])
             lst.pop(0)
-            for _ in range(1, self.group_size):
+            for i in range(1, self.group_size):
                 grouplst.append(bigval(grouplst, lst, survey))
                 lst.remove(bigval(grouplst, lst, survey))
             group = Group(grouplst)
@@ -314,8 +309,7 @@ class WindowGrouper(Grouper):
         while True:
             for i in range(0, len(win)):
                 if i + 1 < len(win):
-                    if survey.score_students(win[i]) \
-                            >= survey.score_students(win[i+1]):
+                    if survey.score_students(win[i]) >= survey.score_students(win[i+1]):
                         group = Group(win[i])
                         g.add_group(group)
                         for p in win[i]:

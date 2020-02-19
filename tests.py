@@ -6,6 +6,8 @@ from criterion import HomogeneousCriterion, InvalidAnswerError, \
 import grouper
 import pytest
 
+from csc148.assignments.a1.grouper import *
+
 
 def test_student() -> None:
     s = Student(1, "John")
@@ -331,6 +333,203 @@ def test_score_students() -> None:
     assert sur1.score_students([s1, s2, s3]) == 1
     assert sur2.score_students([s1, s2, s3]) == 0.5
 
+
+def return_sur() -> Survey:
+    q = CheckboxQuestion(1, "choose", [1, 2, 3, 4])
+    s1 = Student(1, "John")
+    s2 = Student(2, "Carl")
+    s3 = Student(3, "Anne")
+    a1 = Answer([1, 2, 3, 4])
+    a2 = Answer([1])
+    a3 = Answer([1])
+    s1.set_answer(q, a1)
+    s2.set_answer(q, a2)
+    s3.set_answer(q, a3)
+    c = LonelyMemberCriterion()
+    sur = Survey([q])
+    sur.set_weight(1, q)
+    sur.set_criterion(c, q)
+    q_2 = CheckboxQuestion(2, "choose", [1, 2, 3, 4])
+    a4 = Answer([1, 2])
+    a5 = Answer([1, 2])
+    a6 = Answer([1, 2])
+    s1.set_answer(q_2, a4)
+    s2.set_answer(q_2, a5)
+    s3.set_answer(q_2, a6)
+    sur2 = Survey([q, q_2])
+    sur2.set_weight(1, q_2)
+    sur2.set_criterion(c, q_2)
+    return sur2
+
+
+def test_slice_list() -> None:
+    lst = list(range(5))
+    assert grouper.slice_list(lst, 2) == [[0, 1], [2, 3], [4]]
+
+
+def test_windows() -> None:
+    lst = list(range(7))
+    assert grouper.windows(lst, 3) == [[0, 1, 2], [1, 2, 3], [2, 3, 4], [3, 4, 5], [4, 5, 6]]
+
+
+def test_make_grouping() -> None:
+    grouper_ = grouper.AlphaGrouper(3)
+    s1 = Student(1, "John")
+    s2 = Student(2, "Carl")
+    s3 = Student(3, "Anne")
+    c = Course('dd')
+    c.enroll_students([s1, s2, s3])
+    sur = return_sur()
+    group = Group([s3, s2, s1])
+    assert grouper_.make_grouping(c, sur).get_groups()[0].get_members()[0] == group.get_members()[0]
+
+
+def test_make_rangrouping() -> None:
+    grouper_ = grouper.RandomGrouper(3)
+    s1 = Student(1, "John")
+    s2 = Student(2, "Carl")
+    s3 = Student(3, "Anne")
+    c = Course('dd')
+    c.enroll_students([s1, s2, s3])
+    sur = return_sur()
+    group = Group([s3, s2, s1])
+    assert len(grouper_.make_grouping(c, sur).get_groups()[0].get_members()) == len(group.get_members())
+
+
+def test_make_greed_grouping() -> None:
+    grouper_ = grouper.GreedyGrouper(2)
+    q = CheckboxQuestion(1, "choose", [1, 2, 3, 4])
+    s1 = Student(1, "John")
+    s2 = Student(2, "Carl")
+    s3 = Student(3, "Anne")
+    a1 = Answer([1, 2, 3, 4])
+    a2 = Answer([1])
+    a3 = Answer([1])
+    s1.set_answer(q, a1)
+    s2.set_answer(q, a2)
+    s3.set_answer(q, a3)
+    c = LonelyMemberCriterion()
+    sur = Survey([q])
+    sur.set_weight(1, q)
+    sur.set_criterion(c, q)
+    q_2 = CheckboxQuestion(2, "choose", [1, 2, 3, 4])
+    a4 = Answer([1, 2])
+    a5 = Answer([1, 2])
+    a6 = Answer([1, 2])
+    s1.set_answer(q_2, a4)
+    s2.set_answer(q_2, a5)
+    s3.set_answer(q_2, a6)
+    sur2 = Survey([q, q_2])
+    sur2.set_weight(1, q_2)
+    sur2.set_criterion(c, q_2)
+    cr = Course('dd')
+    cr.enroll_students([s1, s2, s3])
+    assert grouper_.make_grouping(cr, sur).get_groups()[0].get_members()[0].name == "John"
+    assert grouper_.make_grouping(cr, sur).get_groups()[0].get_members()[1].name == "Carl"
+    assert grouper_.make_grouping(cr, sur).get_groups()[1].get_members()[0].name == "Anne"
+
+
+def test_make_window_grouping() -> None:
+    grouper_ = grouper.GreedyGrouper(2)
+    q = CheckboxQuestion(1, "choose", [1, 2, 3, 4])
+    s1 = Student(1, "John")
+    s2 = Student(2, "Carl")
+    s3 = Student(3, "Anne")
+    a1 = Answer([1, 2, 3, 4])
+    a2 = Answer([1])
+    a3 = Answer([1])
+    s1.set_answer(q, a1)
+    s2.set_answer(q, a2)
+    s3.set_answer(q, a3)
+    c = LonelyMemberCriterion()
+    sur = Survey([q])
+    sur.set_weight(1, q)
+    sur.set_criterion(c, q)
+    q_2 = CheckboxQuestion(2, "choose", [1, 2, 3, 4])
+    a4 = Answer([1, 2])
+    a5 = Answer([1, 2])
+    a6 = Answer([1, 2])
+    s1.set_answer(q_2, a4)
+    s2.set_answer(q_2, a5)
+    s3.set_answer(q_2, a6)
+    sur2 = Survey([q, q_2])
+    sur2.set_weight(1, q_2)
+    sur2.set_criterion(c, q_2)
+    cr = Course('dd')
+    cr.enroll_students([s1, s2, s3])
+    assert grouper_.make_grouping(cr, sur).get_groups()[0].get_members()[0].name == "John"
+    assert grouper_.make_grouping(cr, sur).get_groups()[0].get_members()[1].name == "Carl"
+    assert grouper_.make_grouping(cr, sur).get_groups()[1].get_members()[0].name == "Anne"
+
+
+class TestGroup:
+    def test___len__(self) -> None:
+        s1 = Student(1, "John")
+        s2 = Student(2, "Carl")
+        s3 = Student(3, "Anne")
+        group = Group([s1, s2, s3])
+        assert len(group) == 3
+
+    def test___contains__(self) -> None:
+        s1 = Student(1, "John")
+        s2 = Student(2, "Carl")
+        s3 = Student(3, "Anne")
+        students = [s1, s2, s3]
+        group = Group(students)
+        for student in students:
+            assert student in group
+
+    def test___str__(self) -> None:
+        s1 = Student(1, "John")
+        s2 = Student(2, "Carl")
+        s3 = Student(3, "Anne")
+        students = [s1, s2, s3]
+        group = Group(students)
+        for student in students:
+            assert student.name in str(group)
+
+    def test_get_members(self) -> None:
+        ids = set()
+        s1 = Student(1, "John")
+        s2 = Student(2, "Carl")
+        s3 = Student(3, "Anne")
+        students = [s1, s2, s3]
+        group = Group(students)
+        for member in group.get_members():
+            ids.add(member.id)
+        assert ids == {1, 2, 3}
+
+
+class TestGrouping:
+    def test___len__(self) -> None:
+        s1 = Student(1, "John")
+        s2 = Student(2, "Carl")
+        s3 = Student(3, "Anne")
+        students = [s1, s2, s3]
+        group = Group(students)
+        g = Grouping()
+        g.add_group(group)
+        assert len(g) == 1
+
+    def test_add_group(self) -> None:
+        s1 = Student(1, "John")
+        s2 = Student(2, "Carl")
+        s3 = Student(3, "Anne")
+        students = [s1, s2, s3]
+        group = Group(students)
+        g = Grouping()
+        g.add_group(group)
+        assert group in g.get_groups()
+
+    def test_get_groups(self) -> None:
+        s1 = Student(1, "John")
+        s2 = Student(2, "Carl")
+        s3 = Student(3, "Anne")
+        students = [s1, s2, s3]
+        group = Group(students)
+        g = Grouping()
+        g.add_group(group)
+        assert [group] == g.get_groups()
 
 if __name__ == '__main__':
     import pytest
