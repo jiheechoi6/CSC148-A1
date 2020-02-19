@@ -82,14 +82,18 @@ class Student:
         Return True if this student has an answer for a question with the same
         id as <question> and that answer is a valid answer for <question>.
         """
-        # TODO: complete the body of this method
+        for q, ans in self._questions_answered.items():
+            if (question.id == q.id) and ans.is_valid(q):
+                return True
+
+        return False
 
     def set_answer(self, question: Question, answer: Answer) -> None:
         """
         Record this student's answer <answer> to the question <question>.
         """
         same = False  # check if there already is answer to the question
-        same_id = 0
+
         for q in self._questions_answered:
             if q.id == question.id:  # if q is already in _questions_answered
                 same = True
@@ -150,7 +154,12 @@ class Course:
         Return True iff all the students enrolled in this course have a valid
         answer for every question in <survey>.
         """
-        # TODO: complete the body of this method
+        for student in self.students:
+            for q in survey.get_questions():
+                if not student.has_answer(q):
+                    return False
+
+        return True
 
     def get_students(self) -> Tuple[Student, ...]:
         """
